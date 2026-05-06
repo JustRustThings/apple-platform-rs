@@ -582,6 +582,7 @@ impl Signer<Signature> for CertificateSigner {
                 .map_err(signature::Error::from_source)?,
             AlgorithmId::EccP256 => digest_algorithm.digest_data(message),
             AlgorithmId::EccP384 => digest_algorithm.digest_data(message),
+            _ => return Err(signature::Error::from_source(format!("Unsupported Algorithm ID {:?}", algorithm_id))),
         };
 
         let mut guard = self
@@ -669,7 +670,7 @@ impl PublicKeyPeerDecrypt for CertificateSigner {
                 let rsa_modulus_length = match algorithm_id {
                     AlgorithmId::Rsa1024 => Some(1024 / 8),
                     AlgorithmId::Rsa2048 => Some(2048 / 8),
-                    AlgorithmId::EccP256 | AlgorithmId::EccP384 => None,
+                    _ => None,
                 };
 
                 let plaintext = match algorithm_id {
@@ -692,6 +693,8 @@ impl PublicKeyPeerDecrypt for CertificateSigner {
                     }
 
                     AlgorithmId::EccP256 | AlgorithmId::EccP384 => plaintext.to_vec(),
+
+                    _ => return Err(AppleCodesignError::RemoteSign(RemoteSignError::Crypto(format!("Unsupported algorithm id {:?}", algorithm_id)))),
                 };
 
                 Ok(plaintext)
